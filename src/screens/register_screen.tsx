@@ -1,16 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { userService } from '../services/userService';
+type RootStackParamList = {
+  Splash: undefined;
+  Login: undefined;
+  Register: undefined;
+};
 
-export default function RegisterScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
+
+export default function RegisterScreen({ navigation }: Props) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -80,7 +89,7 @@ export default function RegisterScreen() {
   // -----------------------------------------
   // Cadastro
   // -----------------------------------------
-  const handleRegister = () => {
+  const handleRegister = async () => {
     let valid = true;
 
     // Limpa erros anteriores
@@ -139,12 +148,12 @@ export default function RegisterScreen() {
     // -----------------------------------------
     // Aqui será feita a chamada para a API
     // -----------------------------------------
-    console.log('Cadastro:', {
-      name: name.trim(),
-      phone: phoneNumbers,
-      email: email.trim(),
-      password,
-    });
+    await userService.cadastrarUsuario(
+      name.trim(),
+      phoneNumbers,
+      email.trim(),
+      password
+    );
   };
 
   return (
@@ -331,6 +340,17 @@ export default function RegisterScreen() {
               </Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={() => {
+                navigation.replace('Login');
+              }}
+            >
+              <Text style={styles.loginText}>
+                Já tem uma conta? Faça login
+              </Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       </ScrollView>
@@ -397,7 +417,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
+    loginButton: {
+        alignSelf: 'center',
+        marginTop: 10,
+        marginBottom: 25,
+    },
 
+    loginText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#D1D5DB',
+    },
   subtitle: {
     marginTop: 8,
     textAlign: 'center',

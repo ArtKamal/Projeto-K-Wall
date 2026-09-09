@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
     Image,
@@ -9,7 +10,14 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-export default function LoginScreen() {
+type RootStackParamList = {
+    Splash: undefined;
+    Login: undefined;
+    Register: undefined;
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+export default function LoginScreen({ navigation }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -189,7 +197,16 @@ export default function LoginScreen() {
                             Entrar
                         </Text>
                     </TouchableOpacity>
-
+                    <TouchableOpacity
+                        style={styles.registerButton}
+                        onPress={() => {
+                            navigation.replace('Register');
+                        }}
+                    >
+                        <Text style={styles.registerText}>
+                            Ainda não tem uma conta? Cadastre-se
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -345,7 +362,17 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#D1D5DB',
     },
+    registerButton: {
+        alignSelf: 'center',
+        marginTop: 10,
+        marginBottom: 25,
+    },
 
+    registerText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#D1D5DB',
+    },
     loginButton: {
         height: 52,
         borderRadius: 10,
