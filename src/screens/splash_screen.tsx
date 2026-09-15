@@ -12,8 +12,10 @@ import {
 
 // Ajuste os nomes das telas conforme seu Navigator
 type RootStackParamList = {
-  Splash: undefined;
-  Login: undefined;
+    Splash: undefined;
+    Login: undefined;
+    Register: undefined;
+    Dashboard: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;

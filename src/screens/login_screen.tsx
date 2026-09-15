@@ -14,6 +14,7 @@ type RootStackParamList = {
     Splash: undefined;
     Login: undefined;
     Register: undefined;
+    Dashboard: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
@@ -64,6 +65,7 @@ export default function LoginScreen({ navigation }: Props) {
             email: email.trim(),
             password,
         });
+        navigation.replace('Dashboard');
     };
 
     return (

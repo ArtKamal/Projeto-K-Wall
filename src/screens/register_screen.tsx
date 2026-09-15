@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
+  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,6 +16,7 @@ type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
   Register: undefined;
+  Dashboard: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
@@ -172,8 +174,8 @@ export default function RegisterScreen({ navigation }: Props) {
 
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoIcon}>M</Text>
+            <View /*style={styles.logoCircle}*/>
+              <Image style={styles.logo} source={require('../../assets/images/logoCyber.png')} />
             </View>
           </View>
 
@@ -383,28 +385,31 @@ const styles = StyleSheet.create({
 
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 1,
   },
 
-  logoCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+  // logoCircle: {
+  //   width: 70,
+  //   height: 70,
+  //   borderRadius: 35,
+  //   backgroundColor: '#FFFFFF',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
 
-    elevation: 8,
+  //   elevation: 8,
 
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+  //   shadowColor: '#000000',
+  //   shadowOffset: {
+  //     width: 0,
+  //     height: 4,
+  //   },
+  //   shadowOpacity: 0.2,
+  //   shadowRadius: 8,
+  // },
+  logo: {
+        width: 300,
+        height: 300,
   },
-
   logoIcon: {
     fontSize: 34,
     fontWeight: '800',
@@ -417,17 +422,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
-    loginButton: {
-        alignSelf: 'center',
-        marginTop: 10,
-        marginBottom: 25,
-    },
+  loginButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 25,
+  },
 
-    loginText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#D1D5DB',
-    },
+  loginText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#D1D5DB',
+  },
   subtitle: {
     marginTop: 8,
     textAlign: 'center',
