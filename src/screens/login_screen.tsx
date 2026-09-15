@@ -10,6 +10,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+
+import { signInWithEmailAndPassword} from 'firebase/auth';
+import { auth } from '../services/firebaseConfig';
 type RootStackParamList = {
     Splash: undefined;
     Login: undefined;
@@ -24,6 +27,7 @@ export default function LoginScreen({ navigation }: Props) {
 
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
 
@@ -34,38 +38,111 @@ export default function LoginScreen({ navigation }: Props) {
         return emailRegex.test(value);
     };
 
-    const handleLogin = () => {
-        let valid = true;
+    const validatePassword = (senha: string) => {
+        const temOitoCaracteres = senha.length >= 8;
+        const temLetra = /[A-Za-z]/.test(senha);
+        const temNumero = /\d/.test(senha);
+        const temSimbolo = /[^A-Za-z\d]/.test(senha);
 
-        // Limpa os erros anteriores
+        return (
+            temOitoCaracteres &&
+            temLetra &&
+            temNumero &&
+            temSimbolo
+        );
+    };
+
+    const senhaTemOitoCaracteres = password.length >= 8;
+    const senhaTemLetra = /[A-Za-z]/.test(password);
+    const senhaTemNumero = /\d/.test(password);
+    const senhaTemSimbolo = /[^A-Za-z\d]/.test(password);
+
+    const handleEmailChange = (text: string) => {
+        // Remove espaços e transforma em letras minúsculas
+        const emailFormatado = text
+            .replace(/\s/g, '')
+            .toLowerCase();
+
+        setEmail(emailFormatado);
+
+        // Limpa a mensagem de erro enquanto o usuário digita
+        if (emailError !== '') {
+            setEmailError('');
+        }
+    };
+
+    const handlePasswordChange = (text: string) => {
+        setPassword(text);
+
+        // Limpa a mensagem de erro enquanto o usuário digita
+        if (passwordError !== '') {
+            setPasswordError('');
+        }
+    };
+
+    const handleLogin = async () => {
+        let valido = true;
+ 
+        // Limpa mensagens anteriores
         setEmailError('');
         setPasswordError('');
-
-        // Validação do e-mail
-        if (!email.trim()) {
-            setEmailError('Digite seu e-mail.');
-            valid = false;
+ 
+        if (email.trim() === '') {
+            setEmailError('Informe seu e-mail.');
+            valido = false;
         } else if (!validateEmail(email.trim())) {
-            setEmailError('Digite um e-mail válido.');
-            valid = false;
+            setEmailError('Informe um e-mail válido.');
+            valido = false;
         }
-
-        // Validação da senha
-        if (!password.trim()) {
-            setPasswordError('Digite sua senha.');
-            valid = false;
+ 
+        if (password.trim() === '') {
+            setPasswordError('Informe sua senha.');
+            valido = false;
+        } else if (!validatePassword(password)) {
+            setPasswordError(
+                'A senha deve ter no mínimo 8 caracteres, contendo letras, números e pelo menos um símbolo.'
+            );
+            valido = false;
         }
-
-        if (!valid) {
+ 
+        if (!valido) {
             return;
         }
-
-        // Aqui será feita a autenticação com a API
-        console.log('Login:', {
-            email: email.trim(),
-            password,
-        });
-        navigation.replace('Dashboard');
+ 
+        setLoading(true);
+ 
+        try {
+            // Autenticação com Firebase
+            await signInWithEmailAndPassword(auth, email.trim(), password);
+ 
+            // Redireciona para o Dashboard e reseta o histórico para evitar voltar ao Login ao pressionar "Voltar"
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Dashboard' }],
+            });
+ 
+        } catch (error: any) {
+            let mensagemErro = 'Não foi possível realizar o login. Tente novamente.';
+ 
+            // Tratamento de erros comuns do Firebase Auth
+            switch (error.code) {
+                case 'auth/invalid-credential':
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    mensagemErro = 'E-mail ou senha incorretos.';
+                    break;
+                case 'auth/too-many-requests':
+                    mensagemErro = 'Muitas tentativas incorretas. Tente novamente mais tarde.';
+                    break;
+                case 'auth/network-request-failed':
+                    mensagemErro = 'Falha de conexão com a internet.';
+                    break;
+            }
+ 
+           
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
