@@ -31,6 +31,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [phoneError, setPhoneError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -63,6 +64,20 @@ export default function RegisterScreen({ navigation }: Props) {
 
     return emailRegex.test(value);
   };
+
+  const validatePassword = (senha: string) => {
+        const temOitoCaracteres = senha.length >= 8;
+        const temLetra = /[A-Za-z]/.test(senha);
+        const temNumero = /\d/.test(senha);
+        const temSimbolo = /[^A-Za-z\d]/.test(senha);
+
+        return (
+            temOitoCaracteres &&
+            temLetra &&
+            temNumero &&
+            temSimbolo
+        );
+    };
 
   // -----------------------------------------
   // Alteração do celular
@@ -99,6 +114,7 @@ export default function RegisterScreen({ navigation }: Props) {
     setPhoneError('');
     setEmailError('');
     setPasswordError('');
+    setSuccessMessage('');
 
     // -----------------------------------------
     // Nome
@@ -138,6 +154,9 @@ export default function RegisterScreen({ navigation }: Props) {
     if (!password.trim()) {
       setPasswordError('Digite sua senha.');
       valid = false;
+    }else if(!validatePassword(password)){
+      setPasswordError('A senha deve ter no mínimo 8 caracteres, contendo letras, números e pelo menos um símbolo.');
+      valid = false;
     }
 
     // -----------------------------------------
@@ -156,6 +175,7 @@ export default function RegisterScreen({ navigation }: Props) {
       email.trim(),
       password
     );
+    setSuccessMessage('Usuário cadastrado com sucesso!');
   };
 
   return (
@@ -187,6 +207,12 @@ export default function RegisterScreen({ navigation }: Props) {
           <Text style={styles.subtitle}>
             Preencha seus dados para começar
           </Text>
+
+          {successMessage ? (
+            <Text style={styles.successText}>
+              {successMessage}
+            </Text>
+          ) : null}
 
           {/* Formulário */}
           <View style={styles.form}>
@@ -499,6 +525,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: '#F87171',
+  },
+  successText: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#10B981',
   },
 
   registerButton: {

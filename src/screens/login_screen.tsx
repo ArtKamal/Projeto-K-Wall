@@ -28,6 +28,7 @@ export default function LoginScreen({ navigation }: Props) {
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [mensagemErro, setMensagemErro] = useState('');
 
     const [showPassword, setShowPassword] = useState(false);
 
@@ -38,27 +39,10 @@ export default function LoginScreen({ navigation }: Props) {
         return emailRegex.test(value);
     };
 
-    const validatePassword = (senha: string) => {
-        const temOitoCaracteres = senha.length >= 8;
-        const temLetra = /[A-Za-z]/.test(senha);
-        const temNumero = /\d/.test(senha);
-        const temSimbolo = /[^A-Za-z\d]/.test(senha);
-
-        return (
-            temOitoCaracteres &&
-            temLetra &&
-            temNumero &&
-            temSimbolo
-        );
-    };
-
-    const senhaTemOitoCaracteres = password.length >= 8;
-    const senhaTemLetra = /[A-Za-z]/.test(password);
-    const senhaTemNumero = /\d/.test(password);
-    const senhaTemSimbolo = /[^A-Za-z\d]/.test(password);
 
     const handleEmailChange = (text: string) => {
         // Remove espaços e transforma em letras minúsculas
+        setMensagemErro(''); // Limpa a mensagem de erro enquanto o usuário digita
         const emailFormatado = text
             .replace(/\s/g, '')
             .toLowerCase();
@@ -73,7 +57,7 @@ export default function LoginScreen({ navigation }: Props) {
 
     const handlePasswordChange = (text: string) => {
         setPassword(text);
-
+        setMensagemErro(''); // Limpa a mensagem de erro enquanto o usuário digita
         // Limpa a mensagem de erro enquanto o usuário digita
         if (passwordError !== '') {
             setPasswordError('');
@@ -98,11 +82,6 @@ export default function LoginScreen({ navigation }: Props) {
         if (password.trim() === '') {
             setPasswordError('Informe sua senha.');
             valido = false;
-        } else if (!validatePassword(password)) {
-            setPasswordError(
-                'A senha deve ter no mínimo 8 caracteres, contendo letras, números e pelo menos um símbolo.'
-            );
-            valido = false;
         }
  
         if (!valido) {
@@ -122,20 +101,20 @@ export default function LoginScreen({ navigation }: Props) {
             });
  
         } catch (error: any) {
-            let mensagemErro = 'Não foi possível realizar o login. Tente novamente.';
+            setMensagemErro('Não foi possível realizar o login. Tente novamente.');
  
             // Tratamento de erros comuns do Firebase Auth
             switch (error.code) {
                 case 'auth/invalid-credential':
                 case 'auth/user-not-found':
                 case 'auth/wrong-password':
-                    mensagemErro = 'E-mail ou senha incorretos.';
+                    setMensagemErro('E-mail ou senha incorretos.');
                     break;
                 case 'auth/too-many-requests':
-                    mensagemErro = 'Muitas tentativas incorretas. Tente novamente mais tarde.';
+                    setMensagemErro('Muitas tentativas incorretas. Tente novamente mais tarde.');
                     break;
                 case 'auth/network-request-failed':
-                    mensagemErro = 'Falha de conexão com a internet.';
+                    setMensagemErro('Falha de conexão com a internet.');
                     break;
             }
  
@@ -184,13 +163,7 @@ export default function LoginScreen({ navigation }: Props) {
                                 emailError ? styles.inputError : null,
                             ]}
                             value={email}
-                            onChangeText={(text) => {
-                                setEmail(text);
-
-                                if (emailError) {
-                                    setEmailError('');
-                                }
-                            }}
+                            onChangeText={handleEmailChange}
                             placeholder="seu@email.com"
                             placeholderTextColor="#6B7280"
                             keyboardType="email-address"
@@ -220,13 +193,7 @@ export default function LoginScreen({ navigation }: Props) {
                             <TextInput
                                 style={styles.passwordInput}
                                 value={password}
-                                onChangeText={(text) => {
-                                    setPassword(text);
-
-                                    if (passwordError) {
-                                        setPasswordError('');
-                                    }
-                                }}
+                                onChangeText={handlePasswordChange}
                                 placeholder="Digite sua senha"
                                 placeholderTextColor="#6B7280"
                                 secureTextEntry={!showPassword}
@@ -253,7 +220,11 @@ export default function LoginScreen({ navigation }: Props) {
                             </Text>
                         ) : null}
                     </View>
-
+                    {mensagemErro ? (
+                        <Text style={styles.errorText}>
+                            {mensagemErro}
+                        </Text>
+                    ) : null}
                     {/* Esqueci minha senha */}
                     <TouchableOpacity
                         style={styles.forgotButton}
@@ -268,12 +239,13 @@ export default function LoginScreen({ navigation }: Props) {
 
                     {/* Botão Login */}
                     <TouchableOpacity
-                        style={styles.loginButton}
+                        style={[styles.loginButton, loading && styles.loginButtonDisabled]}
                         onPress={handleLogin}
                         activeOpacity={0.8}
+                        disabled={loading}
                     >
                         <Text style={styles.loginButtonText}>
-                            Entrar
+                            {loading ? 'Entrando...' : 'Entrar'}
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -458,6 +430,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    loginButtonDisabled: {
+        backgroundColor: '#9CA3AF',
     },
 
     loginButtonText: {
