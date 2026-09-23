@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import DispositivoScreen from './dispositivo_screen';
 
 // Tipagem das rotas Stack e Tab
 type RootStackParamList = {
@@ -18,6 +19,7 @@ type RootStackParamList = {
     Login: undefined;
     Register: undefined;
     Dashboard: undefined; // Dashboard agora é o Tab Navigator
+    Dispositivo: undefined; // Adicione a rota para a tela de cadastro de dispositivo
 };
 
 type TabParamList = {
@@ -72,20 +74,66 @@ function HomeScreen({ navigation }: any) {
 }
 
 // --- TELAS PLACEHOLDER PARA AS OUTRAS ABAS ---
-function DispositivosScreen() {
-    return (
-        <View style={styles.centeredContainer}>
-            <Ionicons name="hardware-chip-outline" size={60} color="#34D399" />
-            <Text style={styles.placeholderText}>Meus Dispositivos</Text>
-        </View>
-    );
-}
 
 function ApiScreen() {
     return (
-        <View style={styles.centeredContainer}>
-            <Ionicons name="code-slash-outline" size={60} color="#34D399" />
-            <Text style={styles.placeholderText}>Gerenciamento de API</Text>
+        <View style={styles.container}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Cabeçalho da Página */}
+                <View style={styles.apiHeader}>
+                    <Text style={styles.pageTitle}>Dados da API</Text>
+                    <Text style={styles.subtitle}>Monitoramento de endpoints e integrações</Text>
+                </View>
+
+                {/* Card de API 1 */}
+                <TouchableOpacity style={styles.apiCard} activeOpacity={0.7}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="server-outline" size={22} color="#47d406" />
+                    </View>
+                    <View style={styles.apiInfo}>
+                        <Text style={styles.apiEndpoint}>GET /api/v1/devices</Text>
+                        <View style={styles.statusRow}>
+                            <View style={[styles.statusDot, { backgroundColor: '#47d406' }]} />
+                            <Text style={styles.apiStatus}>Status: 200 OK</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                </TouchableOpacity>
+
+                {/* Card de API 2 */}
+                <TouchableOpacity style={styles.apiCard} activeOpacity={0.7}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="shield-checkmark-outline" size={22} color="#47d406" />
+                    </View>
+                    <View style={styles.apiInfo}>
+                        <Text style={styles.apiEndpoint}>GET /api/v1/firewall/rules</Text>
+                        <View style={styles.statusRow}>
+                            <View style={[styles.statusDot, { backgroundColor: '#47d406' }]} />
+                            <Text style={styles.apiStatus}>Status: 200 OK</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                </TouchableOpacity>
+
+                {/* Card de API 3 (Exemplo de Erro) */}
+                <TouchableOpacity style={styles.apiCard} activeOpacity={0.7}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="warning-outline" size={22} color="#EF4444" />
+                    </View>
+                    <View style={styles.apiInfo}>
+                        <Text style={styles.apiEndpoint}>POST /api/v1/auth/token</Text>
+                        <View style={styles.statusRow}>
+                            <View style={[styles.statusDot, { backgroundColor: '#EF4444' }]} />
+                            <Text style={[styles.apiStatus, { color: '#EF4444' }]}>Status: 401 Unauthorized</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                </TouchableOpacity>
+
+            </ScrollView>
         </View>
     );
 }
@@ -93,9 +141,9 @@ function ApiScreen() {
 function PerfilScreen({ navigation }: any) {
     return (
         <View style={styles.centeredContainer}>
-            <Ionicons name="person-circle-outline" size={60} color="#34D399" />
+            <Ionicons name="person-circle-outline" size={60} color="#47d406" />
             <Text style={styles.placeholderText}>Meu Perfil</Text>
-            
+
             <TouchableOpacity
                 style={styles.logoutButton}
                 activeOpacity={0.7}
@@ -131,19 +179,19 @@ export default function DashboardScreen({ navigation }: Props) {
 
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: '#34D399', // Verde principal
+                tabBarActiveTintColor: '#47d406', // Verde principal
                 tabBarInactiveTintColor: '#9CA3AF',
                 tabBarStyle: {
                     backgroundColor: '#1F2937',
                     borderTopColor: '#374151',
-                    height: 60,
-                    paddingBottom: 8,
+                    minHeight: 70,
+                    paddingBottom: 10,
                     paddingTop: 8,
                 },
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Dispositivos" component={DispositivosScreen} />
+            <Tab.Screen name="Dispositivos" component={DispositivoScreen as any} options={{ tabBarLabel: 'Dispositivos' }} />
             <Tab.Screen name="API" component={ApiScreen} />
             <Tab.Screen name="Perfil" component={PerfilScreen} />
         </Tab.Navigator>
@@ -241,5 +289,68 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         fontSize: 11,
         color: '#6B7280',
+    },
+    apiHeader: {
+        marginBottom: 24,
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 40, // Ajuste esse valor dependendo de ter cabeçalho global ou não
+        paddingBottom: 40,
+    },
+    pageTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#FFFFFF',
+    },
+    subtitle: {
+        marginTop: 6,
+        fontSize: 14,
+        color: '#9CA3AF',
+    },
+    apiCard: {
+        backgroundColor: '#1F2937', // Fundo do card
+        borderWidth: 1,
+        borderColor: '#374151', // Borda
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 10,
+        backgroundColor: '#111827', // Fundo do ícone mais escuro
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+        borderWidth: 1,
+        borderColor: '#374151',
+    },
+    apiInfo: {
+        flex: 1,
+    },
+    apiEndpoint: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#FFFFFF', // Texto branco para contraste
+        marginBottom: 4,
+    },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        marginRight: 6,
+    },
+    apiStatus: {
+        fontSize: 13,
+        color: '#47d406', // Verde do projeto (sucesso)
+        fontWeight: '600',
     },
 });

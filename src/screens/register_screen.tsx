@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#FFFFFF',
-  },
+  }, 
 
   showButton: {
     height: '100%',
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   successText: {
     marginTop: 6,
     fontSize: 13,
-    color: '#10B981',
+    color: '#47d406',
   },
 
   registerButton: {

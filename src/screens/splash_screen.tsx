@@ -43,7 +43,7 @@ export default function SplashScreen({ navigation }: Props) {
 
     // Vai para o Login depois de 2 segundos
     const timer = setTimeout(() => {
-      navigation.replace('Login');
+      navigation.replace('Dashboard'); // Substitua 'Login' pelo nome da tela de login
     }, 3000);
 
     return () => clearTimeout(timer);
