@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { DispositiveService } from '../services/dispositiveService';
 
 // Substitua pelo seu tipo de rotas real, se estiver em outro arquivo
 type RootStackParamList = {
@@ -26,17 +27,16 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dispositivo'>;
 
 export default function DispositivoScreen({ navigation }: Props) {
     const [nome, setNome] = useState('');
-    const [ip, setIp] = useState('');
+    const [hostname, setHostname] = useState('');
     const [tipo, setTipo] = useState('');
     const [nivelCritico, setNivelCritico] = useState('');
     const [status, setStatus] = useState('');
 
     const [nomeError, setNomeError] = useState('');
-    const [ipError, setIpError] = useState('');
+    const [hostnameError, setHostnameError] = useState('');
     const [tipoError, setTipoError] = useState('');
     const [nivelCriticoError, setNivelCriticoError] = useState('');
     const [statusError, setStatusError] = useState('');
-    const [mensagemerro, setMensagemErro] = useState('');
     const [mensagemSucesso, setMensagemSucesso] = useState('');
 
     const validateFields = () => {
@@ -47,11 +47,11 @@ export default function DispositivoScreen({ navigation }: Props) {
         } else {
             setNomeError('');
         }
-        if (!ip.trim()) {
-            setIpError('Campo obrigatório.');
+        if (!hostname.trim()) {
+            setHostnameError('Campo obrigatório.');
             isValid = false;
         } else {
-            setIpError('');
+            setHostnameError('');
         }
         if (!tipo.trim()) {
             setTipoError('Campo obrigatório.');
@@ -81,12 +81,57 @@ export default function DispositivoScreen({ navigation }: Props) {
             setNomeError('');
         }
     };
+    const handleChangeHostname = (text: string) => {
+        setHostname(text);
+        if (!text.trim()) {
+            setHostnameError('Campo obrigatório.');
+        } else {
+            setHostnameError('');
+        }
+    };
+    const handleChangeTipo = (text: string) => {
+        setTipo(text);
+        if (!text.trim()) {
+            setTipoError('Campo obrigatório.');
+        } else {
+            setTipoError('');
+        }
+    };
+    const handleChangeNivelCritico = (text: string) => {
+        setNivelCritico(text);
+        if (!text.trim()) {
+            setNivelCriticoError('Campo obrigatório.');
+        } else {
+            setNivelCriticoError('');
+        }
+    };
+    const handleChangeStatus = (text: string) => {
+        setStatus(text);
+        if (!text.trim()) {
+            setStatusError('Campo obrigatório.');
+        } else {
+            setStatusError('');
+        }
+    };
 
-    const handleSalvar = () => {
+    const handleSalvar = async() => {
+        setMensagemSucesso(''); // Limpa a mensagem de sucesso antes de validar
         if (validateFields()) {
-            console.log('Dispositivo salvo:', { nome, ip, tipo, nivelCritico, status });
-            // Aqui vai a lógica de API futuramente
-            navigation.goBack(); // Volta para a tela anterior
+            await DispositiveService.criar({
+                nome,
+                hostname,
+                tipo,
+                nivelCritico,
+                status
+            });
+            console.log('Dispositivo salvo:', { nome, hostname, tipo, nivelCritico, status });
+            setMensagemSucesso('Dispositivo cadastrado com sucesso!');
+            // Limpar os campos após salvar
+            setNome('');
+            setHostname('');
+            setTipo('');
+            setNivelCritico('');
+            setStatus('');
         }
     };
     
@@ -107,7 +152,9 @@ export default function DispositivoScreen({ navigation }: Props) {
                     <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Novo Dispositivo</Text>
-                <View style={styles.placeholder} /> {/* Para centralizar o título */}
+
+                {/* Para centralizar o título */}
+                <View style={styles.placeholder} />
             </View>
 
             <ScrollView
@@ -146,12 +193,11 @@ export default function DispositivoScreen({ navigation }: Props) {
                                 style={styles.input}
                                 placeholder="192.168.0.100"
                                 placeholderTextColor="#6B7280"
-                                keyboardType="numeric"
-                                value={ip}
-                                onChangeText={setIp}
+                                value={hostname}
+                                onChangeText={handleChangeHostname}
                             />
                         </View>
-                        {ipError ? <Text style={{ color: 'red', marginTop: 4 }}>{ipError}</Text> : null}
+                        {hostnameError ? <Text style={{ color: 'red', marginTop: 4 }}>{hostnameError}</Text> : null}
                     </View>
 
                     {/* Campo Tipo */}
@@ -164,7 +210,7 @@ export default function DispositivoScreen({ navigation }: Props) {
                                 placeholder="Ex: Roteador, Firewall, Câmera"
                                 placeholderTextColor="#6B7280"
                                 value={tipo}
-                                onChangeText={setTipo}
+                                onChangeText={handleChangeTipo}
                             />
                         </View>
                         {tipoError ? <Text style={{ color: 'red', marginTop: 4 }}>{tipoError}</Text> : null}
@@ -180,7 +226,7 @@ export default function DispositivoScreen({ navigation }: Props) {
                                 placeholder="Ex: Alto, Médio, Baixo"
                                 placeholderTextColor="#6B7280"
                                 value={nivelCritico}
-                                onChangeText={setNivelCritico}
+                                onChangeText={handleChangeNivelCritico}
                             />
                         </View>
                         {nivelCriticoError ? <Text style={{ color: 'red', marginTop: 4 }}>{nivelCriticoError}</Text> : null}
@@ -196,12 +242,13 @@ export default function DispositivoScreen({ navigation }: Props) {
                                 placeholder="Ex: Ativo, Inativo"
                                 placeholderTextColor="#6B7280"
                                 value={status}
-                                onChangeText={setStatus}
+                                onChangeText={handleChangeStatus}
                             />
                         </View>
                         {statusError ? <Text style={{ color: 'red', marginTop: 4 }}>{statusError}</Text> : null}
                     </View>
-
+                    {/* Mensagem de sucesso */}
+                    {mensagemSucesso ? <Text style={{ color: 'green', marginTop: 4 }}>{mensagemSucesso}</Text> : null}
                 </View>
 
                 {/* Botão Salvar */}

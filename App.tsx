@@ -8,6 +8,7 @@ import RegisterScreen from './src/screens/register_screen';
 import SplashScreen from './src/screens/splash_screen';
 import DashboardScreen from './src/screens/dashboard_screen';
 import DispositivoScreen from './src/screens/dispositivo_screen';
+import DispositivosScreen from './src/screens/dispositivos_screen';
 
 
 type RootStackParamList = {
@@ -16,6 +17,7 @@ type RootStackParamList = {
     Register: undefined;
     Dashboard: undefined;
     Dispositivo: undefined;
+    Dispositivos: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -31,6 +33,7 @@ export default function App() {
                 <Stack.Screen name="Register" component={RegisterScreen} />
                 <Stack.Screen name="Dashboard" component={DashboardScreen} />
                 <Stack.Screen name="Dispositivo" component={DispositivoScreen} />
+                <Stack.Screen name="Dispositivos" component={DispositivosScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

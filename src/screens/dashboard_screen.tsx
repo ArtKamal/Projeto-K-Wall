@@ -11,7 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import DispositivoScreen from './dispositivo_screen';
+import DispositivosScreen from './dispositivos_screen';
 
 // Tipagem das rotas Stack e Tab
 type RootStackParamList = {
@@ -19,7 +19,8 @@ type RootStackParamList = {
     Login: undefined;
     Register: undefined;
     Dashboard: undefined; // Dashboard agora é o Tab Navigator
-    Dispositivo: undefined; // Adicione a rota para a tela de cadastro de dispositivo
+    Dispositivo: undefined;
+    Dispositivos: undefined; // Adicione a rota para a tela de cadastro de dispositivo
 };
 
 type TabParamList = {
@@ -191,7 +192,7 @@ export default function DashboardScreen({ navigation }: Props) {
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Dispositivos" component={DispositivoScreen as any} options={{ tabBarLabel: 'Dispositivos' }} />
+            <Tab.Screen name="Dispositivos" component={DispositivosScreen as any} options={{ tabBarLabel: 'Dispositivos' }} />
             <Tab.Screen name="API" component={ApiScreen} />
             <Tab.Screen name="Perfil" component={PerfilScreen} />
         </Tab.Navigator>
