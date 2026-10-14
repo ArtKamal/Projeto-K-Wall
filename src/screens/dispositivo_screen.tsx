@@ -1,31 +1,44 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, { useEffect, useState } from 'react';
 import {
-    View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    StatusBar,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform
+    View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DispositiveService } from '../services/dispositiveService';
 
-// Substitua pelo seu tipo de rotas real, se estiver em outro arquivo
+type DispositivoParaEditar = {
+    id?: number;
+    nome: string;
+    hostname: string;
+    tipo: string;
+    nivelCritico: string;
+    status: string;
+};
+
 type RootStackParamList = {
     Splash: undefined;
     Login: undefined;
     Register: undefined;
     Dashboard: undefined;
-    Dispositivo: undefined;
+    Dispositivo: {
+        dispositivoParaEditar?: DispositivoParaEditar;
+    } | undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Dispositivo'>;
 
-export default function DispositivoScreen({ navigation }: Props) {
+export default function DispositivoScreen({ route, navigation }: Props) {
+    const dispositivoParaEditar = route.params?.dispositivoParaEditar;
+    const isEdicao = !!dispositivoParaEditar;
+
     const [nome, setNome] = useState('');
     const [hostname, setHostname] = useState('');
     const [tipo, setTipo] = useState('');
@@ -38,6 +51,16 @@ export default function DispositivoScreen({ navigation }: Props) {
     const [nivelCriticoError, setNivelCriticoError] = useState('');
     const [statusError, setStatusError] = useState('');
     const [mensagemSucesso, setMensagemSucesso] = useState('');
+
+    useEffect(() => {
+        if (isEdicao) {
+            setNome(dispositivoParaEditar.nome);
+            setHostname(dispositivoParaEditar.hostname);
+            setTipo(dispositivoParaEditar.tipo);
+            setNivelCritico(dispositivoParaEditar.nivelCritico);
+            setStatus(dispositivoParaEditar.status);
+        }
+    }, [dispositivoParaEditar, isEdicao]);
 
     const validateFields = () => {
         let isValid = true;
@@ -114,27 +137,52 @@ export default function DispositivoScreen({ navigation }: Props) {
         }
     };
 
-    const handleSalvar = async() => {
-        setMensagemSucesso(''); // Limpa a mensagem de sucesso antes de validar
-        if (validateFields()) {
-            await DispositiveService.criar({
+    const handleSalvar = async () => {
+        setMensagemSucesso('');
+        // Limpa a mensagem de sucesso antes de validar
+        if (isEdicao) {
+            const idParaAtualizar = dispositivoParaEditar?.id;
+            if (idParaAtualizar === undefined) {
+                return;
+            }
+
+            console.log('Atualizando dispositivo ID:', idParaAtualizar);
+            await DispositiveService.atualizar(String(idParaAtualizar), {
                 nome,
                 hostname,
                 tipo,
                 nivelCritico,
                 status
             });
-            console.log('Dispositivo salvo:', { nome, hostname, tipo, nivelCritico, status });
-            setMensagemSucesso('Dispositivo cadastrado com sucesso!');
-            // Limpar os campos após salvar
+            console.log('Dispositivo atualizado:', { nome, hostname, tipo, nivelCritico, status });
+            setMensagemSucesso('Dispositivo atualizado com sucesso!');
+
             setNome('');
             setHostname('');
             setTipo('');
             setNivelCritico('');
             setStatus('');
+        } else {
+            if (validateFields()) {
+                await DispositiveService.criar({
+                    nome,
+                    hostname,
+                    tipo,
+                    nivelCritico,
+                    status
+                });
+                console.log('Dispositivo salvo:', { nome, hostname, tipo, nivelCritico, status });
+                setMensagemSucesso('Dispositivo cadastrado com sucesso!');
+                // Limpar os campos após salvar
+                setNome('');
+                setHostname('');
+                setTipo('');
+                setNivelCritico('');
+                setStatus('');
+            }
         }
     };
-    
+
 
     return (
         <KeyboardAvoidingView

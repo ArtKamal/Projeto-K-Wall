@@ -140,4 +140,5 @@ export class DispositiveService {
             throw new Error('Falha ao remover o dispositivo.');
         }
     }
+    // Exemplo no componente que carrega a lista
 }
