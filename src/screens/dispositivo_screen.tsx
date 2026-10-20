@@ -96,6 +96,34 @@ export default function DispositivoScreen({ route, navigation }: Props) {
         }
         return isValid;
     };
+    const isValidIPv4 = (ip: string): boolean => {
+        const parts = ip.trim().split('.');
+
+        return (
+            parts.length === 4 &&
+            parts.every((part) =>
+                /^\d{1,3}$/.test(part) &&
+                Number(part) >= 0 &&
+                Number(part) <= 255
+            )
+        );
+    }
+
+    const isValidHostname = (hostname: string): boolean => {
+        if (hostname.length > 253) return false;
+
+        const labels = hostname.split('.');
+
+        return labels.every((label) =>
+            label.length >= 1 &&
+            label.length <= 63 &&
+            /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(label)
+        );
+    }
+
+    const isValidAddress = (value: string): boolean => {
+        return isValidIPv4(value) || isValidHostname(value);
+    }
     const handleChangeNome = (text: string) => {
         setNome(text);
         if (!text.trim()) {
@@ -106,8 +134,11 @@ export default function DispositivoScreen({ route, navigation }: Props) {
     };
     const handleChangeHostname = (text: string) => {
         setHostname(text);
+
         if (!text.trim()) {
             setHostnameError('Campo obrigatório.');
+        } else if (!isValidIPv4(text)) {
+            setHostnameError('Digite um IPv4 válido.');
         } else {
             setHostnameError('');
         }
