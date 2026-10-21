@@ -1,8 +1,9 @@
 export interface DispositiveModel {
     id?: string;
     nome: string;
-    hostname: string;
+    tipoEndereco: 'ipv4' | 'hostname';
+    endereco: string;
     tipo: string;
-    nivelCritico: string;
-    status: string;
+    nivelCritico: 'Baixo' | 'Médio' | 'Alto';
+    ativo: boolean;
 }

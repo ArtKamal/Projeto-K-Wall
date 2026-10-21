@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import {
@@ -10,17 +11,28 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Switch
 } from 'react-native';
 import { DispositiveService } from '../services/dispositiveService';
 
+type TipoEndereco = 'ipv4' | 'hostname';
+
 type DispositivoParaEditar = {
-    id?: number;
+    id?: number | string;
     nome: string;
-    hostname: string;
+
+    // Campos novos
+    endereco?: string;
+    tipoEndereco?: TipoEndereco;
+    ativo?: boolean;
+
+    // Campos antigos, para compatibilidade
+    hostname?: string;
+    status?: string;
+
     tipo: string;
     nivelCritico: string;
-    status: string;
 };
 
 type RootStackParamList = {
@@ -40,85 +52,138 @@ export default function DispositivoScreen({ route, navigation }: Props) {
     const isEdicao = !!dispositivoParaEditar;
 
     const [nome, setNome] = useState('');
-    const [hostname, setHostname] = useState('');
+    const [tipoEndereco, setTipoEndereco] =
+        useState<TipoEndereco>('ipv4');
+    const [endereco, setEndereco] = useState('');
     const [tipo, setTipo] = useState('');
     const [nivelCritico, setNivelCritico] = useState('');
-    const [status, setStatus] = useState('');
+    const [ativo, setAtivo] = useState(true);
 
     const [nomeError, setNomeError] = useState('');
-    const [hostnameError, setHostnameError] = useState('');
+    const [enderecoError, setEnderecoError] = useState('');
     const [tipoError, setTipoError] = useState('');
     const [nivelCriticoError, setNivelCriticoError] = useState('');
     const [statusError, setStatusError] = useState('');
     const [mensagemSucesso, setMensagemSucesso] = useState('');
 
     useEffect(() => {
-        if (isEdicao) {
-            setNome(dispositivoParaEditar.nome);
-            setHostname(dispositivoParaEditar.hostname);
-            setTipo(dispositivoParaEditar.tipo);
-            setNivelCritico(dispositivoParaEditar.nivelCritico);
-            setStatus(dispositivoParaEditar.status);
+        if (!isEdicao || !dispositivoParaEditar) {
+            return;
         }
+
+        const enderecoSalvo =
+            dispositivoParaEditar.endereco ??
+            dispositivoParaEditar.hostname ??
+            '';
+
+        setNome(dispositivoParaEditar.nome);
+        setEndereco(enderecoSalvo);
+
+        setTipoEndereco(
+            dispositivoParaEditar.tipoEndereco ??
+            (isValidIPv4(enderecoSalvo) ? 'ipv4' : 'hostname')
+        );
+
+        setTipo(dispositivoParaEditar.tipo);
+        setNivelCritico(dispositivoParaEditar.nivelCritico);
+
+        setAtivo(
+            dispositivoParaEditar.ativo ??
+            dispositivoParaEditar.status?.toLowerCase() === 'ativo'
+        );
     }, [dispositivoParaEditar, isEdicao]);
 
-    const validateFields = () => {
+    const validateFields = (): boolean => {
         let isValid = true;
+
         if (!nome.trim()) {
             setNomeError('Campo obrigatório.');
             isValid = false;
         } else {
             setNomeError('');
         }
-        if (!hostname.trim()) {
-            setHostnameError('Campo obrigatório.');
+
+        if (!endereco.trim()) {
+            setEnderecoError('Campo obrigatório.');
+            isValid = false;
+        } else if (
+            tipoEndereco === 'ipv4'
+                ? !isValidIPv4(endereco)
+                : !isValidHostname(endereco)
+        ) {
+            setEnderecoError(
+                tipoEndereco === 'ipv4'
+                    ? 'Digite um IPv4 válido.'
+                    : 'Digite um hostname válido.'
+            );
             isValid = false;
         } else {
-            setHostnameError('');
+            setEnderecoError('');
         }
-        if (!tipo.trim()) {
-            setTipoError('Campo obrigatório.');
+
+        if (!tipo) {
+            setTipoError('Selecione o tipo de dispositivo.');
             isValid = false;
         } else {
             setTipoError('');
         }
-        if (!nivelCritico.trim()) {
-            setNivelCriticoError('Campo obrigatório.');
+
+        if (!nivelCritico) {
+            setNivelCriticoError('Selecione o nível crítico.');
             isValid = false;
         } else {
             setNivelCriticoError('');
         }
-        if (!status.trim()) {
-            setStatusError('Campo obrigatório.');
-            isValid = false;
-        } else {
-            setStatusError('');
-        }
+
         return isValid;
     };
-    const isValidIPv4 = (ip: string): boolean => {
-        const parts = ip.trim().split('.');
 
-        return (
-            parts.length === 4 &&
-            parts.every((part) =>
-                /^\d{1,3}$/.test(part) &&
-                Number(part) >= 0 &&
-                Number(part) <= 255
-            )
+    const isValidIPv4 = (value: string): boolean => {
+        const parts = value.trim().split('.');
+
+        if (parts.length !== 4) {
+            return false;
+        }
+
+        return parts.every((part) => {
+            if (!/^\d{1,3}$/.test(part)) {
+                return false;
+            }
+
+            const number = Number(part);
+
+            return number >= 0 && number <= 255;
+        });
+    }
+
+    const isValidHostname = (value: string): boolean => {
+        const hostname = value.trim();
+
+        if (!hostname || hostname.length > 253) {
+            return false;
+        }
+
+        return hostname.split('.').every((part) =>
+            part.length >= 1 &&
+            part.length <= 63 &&
+            /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(part)
         );
     }
 
-    const isValidHostname = (hostname: string): boolean => {
-        if (hostname.length > 253) return false;
+    const normalizarEndereco = (
+        value: string,
+        tipo: TipoEndereco
+    ): string => {
+        const enderecoLimpo = value.trim();
 
-        const labels = hostname.split('.');
+        if (tipo === 'ipv4') {
+            return enderecoLimpo
+                .split('.')
+                .map((part) => String(Number(part)))
+                .join('.');
+        }
 
-        return labels.every((label) =>
-            label.length >= 1 &&
-            label.length <= 63 &&
-            /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(label)
-        );
+        return enderecoLimpo.toLowerCase();
     }
 
     const isValidAddress = (value: string): boolean => {
@@ -137,8 +202,8 @@ export default function DispositivoScreen({ route, navigation }: Props) {
 
         if (!text.trim()) {
             setHostnameError('Campo obrigatório.');
-        } else if (!isValidIPv4(text)) {
-            setHostnameError('Digite um IPv4 válido.');
+        } else if (!isValidAddress(text)) {
+            setHostnameError('Digite um endereço IPV4 ou Hostname válido.');
         } else {
             setHostnameError('');
         }
@@ -264,67 +329,182 @@ export default function DispositivoScreen({ route, navigation }: Props) {
                     </View>
 
                     {/* Campo IP */}
+                    {/* Campo de endereço */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Endereço IPv4 / Hostname</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="globe-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                        <Text style={styles.label}>Tipo de endereço</Text>
+
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            {(['ipv4', 'hostname'] as const).map((opcao) => {
+                                const selecionado = tipoEndereco === opcao;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={opcao}
+                                        onPress={() => {
+                                            setTipoEndereco(opcao);
+                                            setEndereco('');
+                                            setEnderecoError('');
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            paddingVertical: 12,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            backgroundColor: selecionado
+                                                ? '#47D406'
+                                                : '#1F2937',
+                                            borderWidth: 1,
+                                            borderColor: selecionado
+                                                ? '#47D406'
+                                                : '#374151',
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                color: selecionado ? '#111827' : '#D1D5DB',
+                                                fontWeight: '600',
+                                            }}
+                                        >
+                                            {opcao === 'ipv4' ? 'IPv4' : 'Hostname'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        <View style={[styles.inputContainer, { marginTop: 12 }]}>
+                            <Ionicons
+                                name="globe-outline"
+                                size={20}
+                                color="#9CA3AF"
+                                style={styles.inputIcon}
+                            />
+
                             <TextInput
                                 style={styles.input}
-                                placeholder="192.168.0.100"
+                                placeholder={
+                                    tipoEndereco === 'ipv4'
+                                        ? '192.168.1.100'
+                                        : 'srv-db-01'
+                                }
                                 placeholderTextColor="#6B7280"
-                                value={hostname}
-                                onChangeText={handleChangeHostname}
+                                value={endereco}
+                                onChangeText={(text) => {
+                                    setEndereco(text);
+                                    setEnderecoError('');
+                                }}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                maxLength={tipoEndereco === 'ipv4' ? 15 : 253}
+                                keyboardType={
+                                    tipoEndereco === 'ipv4'
+                                        ? 'numbers-and-punctuation'
+                                        : 'default'
+                                }
                             />
                         </View>
-                        {hostnameError ? <Text style={{ color: 'red', marginTop: 4 }}>{hostnameError}</Text> : null}
+
+                        {enderecoError ? (
+                            <Text style={{ color: '#F87171', marginTop: 4 }}>
+                                {enderecoError}
+                            </Text>
+                        ) : null}
                     </View>
 
                     {/* Campo Tipo */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Tipo de Dispositivo</Text>
+                        <Text style={styles.label}>Tipo de dispositivo</Text>
+
                         <View style={styles.inputContainer}>
-                            <Ionicons name="layers-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Ex: Roteador, Firewall, Câmera"
-                                placeholderTextColor="#6B7280"
-                                value={tipo}
-                                onChangeText={handleChangeTipo}
-                            />
+                            <Picker
+                                selectedValue={tipo}
+                                onValueChange={(value) => setTipo(value)}
+                                style={{ flex: 1, color: '#FFFFFF' }}
+                                dropdownIconColor="#FFFFFF"
+                            >
+                                <Picker.Item
+                                    label="Selecione o tipo"
+                                    value=""
+                                    color="#9CA3AF"
+                                />
+                                <Picker.Item label="Servidor" value="Servidor" />
+                                <Picker.Item label="Roteador" value="Roteador" />
+                                <Picker.Item label="Switch" value="Switch" />
+                                <Picker.Item label="Firewall" value="Firewall" />
+                                <Picker.Item label="Câmera" value="Câmera" />
+                                <Picker.Item
+                                    label="Estação de trabalho"
+                                    value="Estação de trabalho"
+                                />
+                                <Picker.Item label="Outro" value="Outro" />
+                            </Picker>
                         </View>
-                        {tipoError ? <Text style={{ color: 'red', marginTop: 4 }}>{tipoError}</Text> : null}
+
+                        {tipoError ? (
+                            <Text style={{ color: '#F87171', marginTop: 4 }}>
+                                {tipoError}
+                            </Text>
+                        ) : null}
                     </View>
 
                     {/* Campo Nível Crítico */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Nível Crítico</Text>
+                        <Text style={styles.label}>Nível crítico</Text>
+
                         <View style={styles.inputContainer}>
-                            <Ionicons name="alert-circle-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Ex: Alto, Médio, Baixo"
-                                placeholderTextColor="#6B7280"
-                                value={nivelCritico}
-                                onChangeText={handleChangeNivelCritico}
-                            />
+                            <Picker
+                                selectedValue={nivelCritico}
+                                onValueChange={(value) => setNivelCritico(value)}
+                                style={{ flex: 1, color: '#FFFFFF' }}
+                                dropdownIconColor="#FFFFFF"
+                            >
+                                <Picker.Item
+                                    label="Selecione o nível"
+                                    value=""
+                                    color="#9CA3AF"
+                                />
+                                <Picker.Item label="Baixo" value="Baixo" />
+                                <Picker.Item label="Médio" value="Médio" />
+                                <Picker.Item label="Alto" value="Alto" />
+                                <Picker.Item label="Crítico" value="Crítico" />
+                            </Picker>
                         </View>
-                        {nivelCriticoError ? <Text style={{ color: 'red', marginTop: 4 }}>{nivelCriticoError}</Text> : null}
+
+                        {nivelCriticoError ? (
+                            <Text style={{ color: '#F87171', marginTop: 4 }}>
+                                {nivelCriticoError}
+                            </Text>
+                        ) : null}
                     </View>
 
                     {/* Campo Status */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Status</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="checkmark-circle-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Ex: Ativo, Inativo"
-                                placeholderTextColor="#6B7280"
-                                value={status}
-                                onChangeText={handleChangeStatus}
+                        <View
+                            style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <View style={{ flex: 1, marginRight: 12 }}>
+                                <Text style={styles.label}>Dispositivo ativo</Text>
+                                <Text style={{ color: '#9CA3AF', fontSize: 12 }}>
+                                    {ativo
+                                        ? 'Habilitado no inventário'
+                                        : 'Desabilitado no inventário'}
+                                </Text>
+                            </View>
+
+                            <Switch
+                                value={ativo}
+                                onValueChange={setAtivo}
+                                trackColor={{
+                                    false: '#374151',
+                                    true: '#47D406',
+                                }}
+                                thumbColor="#FFFFFF"
                             />
                         </View>
-                        {statusError ? <Text style={{ color: 'red', marginTop: 4 }}>{statusError}</Text> : null}
                     </View>
                     {/* Mensagem de sucesso */}
                     {mensagemSucesso ? <Text style={{ color: 'green', marginTop: 4 }}>{mensagemSucesso}</Text> : null}
