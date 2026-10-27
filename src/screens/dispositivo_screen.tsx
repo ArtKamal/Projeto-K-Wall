@@ -63,7 +63,6 @@ export default function DispositivoScreen({ route, navigation }: Props) {
     const [enderecoError, setEnderecoError] = useState('');
     const [tipoError, setTipoError] = useState('');
     const [nivelCriticoError, setNivelCriticoError] = useState('');
-    const [statusError, setStatusError] = useState('');
     const [mensagemSucesso, setMensagemSucesso] = useState('');
 
     useEffect(() => {
@@ -198,14 +197,14 @@ export default function DispositivoScreen({ route, navigation }: Props) {
         }
     };
     const handleChangeHostname = (text: string) => {
-        setHostname(text);
+        setEndereco(text);
 
         if (!text.trim()) {
-            setHostnameError('Campo obrigatório.');
+            setEnderecoError('Campo obrigatório.');
         } else if (!isValidAddress(text)) {
-            setHostnameError('Digite um endereço IPV4 ou Hostname válido.');
+            setEnderecoError('Digite um endereço IPV4 ou Hostname válido.');
         } else {
-            setHostnameError('');
+            setEnderecoError('');
         }
     };
     const handleChangeTipo = (text: string) => {
@@ -224,14 +223,6 @@ export default function DispositivoScreen({ route, navigation }: Props) {
             setNivelCriticoError('');
         }
     };
-    const handleChangeStatus = (text: string) => {
-        setStatus(text);
-        if (!text.trim()) {
-            setStatusError('Campo obrigatório.');
-        } else {
-            setStatusError('');
-        }
-    };
 
     const handleSalvar = async () => {
         setMensagemSucesso('');
@@ -245,36 +236,36 @@ export default function DispositivoScreen({ route, navigation }: Props) {
             console.log('Atualizando dispositivo ID:', idParaAtualizar);
             await DispositiveService.atualizar(String(idParaAtualizar), {
                 nome,
-                hostname,
+                endereco,
                 tipo,
+                tipoEndereco,
                 nivelCritico,
-                status
+                ativo
             });
-            console.log('Dispositivo atualizado:', { nome, hostname, tipo, nivelCritico, status });
+            console.log('Dispositivo atualizado:', { nome, tipoEndereco, endereco, tipo, nivelCritico, ativo });
             setMensagemSucesso('Dispositivo atualizado com sucesso!');
 
             setNome('');
-            setHostname('');
+            setEndereco('');
             setTipo('');
             setNivelCritico('');
-            setStatus('');
         } else {
             if (validateFields()) {
                 await DispositiveService.criar({
                     nome,
-                    hostname,
+                    tipoEndereco,
+                    endereco,
                     tipo,
                     nivelCritico,
-                    status
+                    ativo
                 });
-                console.log('Dispositivo salvo:', { nome, hostname, tipo, nivelCritico, status });
+                console.log('Dispositivo salvo:', { nome, tipoEndereco, endereco, tipo, nivelCritico, ativo });
                 setMensagemSucesso('Dispositivo cadastrado com sucesso!');
                 // Limpar os campos após salvar
                 setNome('');
-                setHostname('');
+                setEndereco('');
                 setTipo('');
                 setNivelCritico('');
-                setStatus('');
             }
         }
     };
@@ -419,13 +410,13 @@ export default function DispositivoScreen({ route, navigation }: Props) {
                             <Picker
                                 selectedValue={tipo}
                                 onValueChange={(value) => setTipo(value)}
-                                style={{ flex: 1, color: '#FFFFFF' }}
-                                dropdownIconColor="#FFFFFF"
+                                style={{ flex: 1, color: '#111827' }}
+                                dropdownIconColor="#111827"
                             >
                                 <Picker.Item
                                     label="Selecione o tipo"
                                     value=""
-                                    color="#9CA3AF"
+                                    color="#111827"
                                 />
                                 <Picker.Item label="Servidor" value="Servidor" />
                                 <Picker.Item label="Roteador" value="Roteador" />
@@ -455,18 +446,17 @@ export default function DispositivoScreen({ route, navigation }: Props) {
                             <Picker
                                 selectedValue={nivelCritico}
                                 onValueChange={(value) => setNivelCritico(value)}
-                                style={{ flex: 1, color: '#FFFFFF' }}
-                                dropdownIconColor="#FFFFFF"
+                                style={{ flex: 1, color: '#111827' }}
+                                dropdownIconColor="#111827"
                             >
                                 <Picker.Item
                                     label="Selecione o nível"
                                     value=""
-                                    color="#9CA3AF"
+                                    color="#111827"
                                 />
                                 <Picker.Item label="Baixo" value="Baixo" />
                                 <Picker.Item label="Médio" value="Médio" />
                                 <Picker.Item label="Alto" value="Alto" />
-                                <Picker.Item label="Crítico" value="Crítico" />
                             </Picker>
                         </View>
 
@@ -490,8 +480,8 @@ export default function DispositivoScreen({ route, navigation }: Props) {
                                 <Text style={styles.label}>Dispositivo ativo</Text>
                                 <Text style={{ color: '#9CA3AF', fontSize: 12 }}>
                                     {ativo
-                                        ? 'Habilitado no inventário'
-                                        : 'Desabilitado no inventário'}
+                                        ? 'Ativado'
+                                        : 'Desativado'}
                                 </Text>
                             </View>
 

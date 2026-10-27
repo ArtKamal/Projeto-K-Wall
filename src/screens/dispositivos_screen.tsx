@@ -35,7 +35,7 @@ export default function DispositivosScreen({ navigation }: Props) {
 
     const [dispositivos, setDispositivos] = useState<DispositiveModel[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-
+    const [textoAtivo, setTextoAtivo] = useState('')
     const carregarDispositivos = async () => {
         try {
             setLoading(true);
@@ -134,7 +134,7 @@ export default function DispositivosScreen({ navigation }: Props) {
                     <View
                         style={[
                             styles.statusIndicator,
-                            item.status === 'Ativo'
+                            item.ativo
                                 ? styles.statusActive
                                 : styles.statusInactive
                         ]}
@@ -174,7 +174,7 @@ export default function DispositivosScreen({ navigation }: Props) {
                                 IP / Hostname
                             </Text>
                             <Text style={styles.infoValue}>
-                                {item.hostname || 'N/A'}
+                                {item.endereco || 'N/A'}
                             </Text>
                         </View>
                     </View>
@@ -197,21 +197,21 @@ export default function DispositivosScreen({ navigation }: Props) {
                         </Text>
                     </View>
 
-                    <View style={styles.statusContainer}>
+                    {/* <View style={styles.statusContainer}>
                         <Text style={styles.statusLabel}>
                             Status:
                         </Text>
                         <Text
                             style={[
                                 styles.statusText,
-                                item.status === 'Ativo'
+                                item.ativo
                                     ? styles.activeText
                                     : styles.inactiveText
                             ]}
                         >
-                            {item.status || 'N/A'}
+                 
                         </Text>
-                    </View>
+                    </View> */}
                 </View>
             </TouchableOpacity>
         );
