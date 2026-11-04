@@ -68,7 +68,7 @@ function HomeScreen({ navigation }: any) {
                 </View>
 
                 {/* Adicione os Cards de Status e Ações aqui */}
-
+                
             </ScrollView>
         </View>
     );

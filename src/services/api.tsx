@@ -1,10 +1,16 @@
 import axios from 'axios';
-import { JSONBinResponse, RouteModel } from '../models/RouteModel';
+import { RedeModel } from '../models/RedeModel';
 import { URL, API_KEY } from '../constants/config';
- 
-export const getProduct = async (): Promise<Product[]> => {
+
+interface JSONBinResponse {
+  record?: {
+    record: RedeModel[];
+  };
+}
+
+export const getProduct = async (): Promise<RedeModel[]> => {
   try {
-    console.log('Buscando produto na API...');
+    console.log('Buscando redes na API...');
  
     const response = await axios.get<JSONBinResponse>(URL, {
       headers: {
