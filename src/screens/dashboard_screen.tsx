@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import DispositivosScreen from './dispositivos_screen';
+import RedesScreen from './redes_screen';
 
 // Tipagem das rotas Stack e Tab
 type RootStackParamList = {
@@ -20,7 +21,9 @@ type RootStackParamList = {
     Register: undefined;
     Dashboard: undefined; // Dashboard agora é o Tab Navigator
     Dispositivo: undefined;
-    Dispositivos: undefined; // Adicione a rota para a tela de cadastro de dispositivo
+    Dispositivos: undefined;
+    Rede: undefined;
+    Redes: undefined;
 };
 
 type TabParamList = {
@@ -28,6 +31,7 @@ type TabParamList = {
     Dispositivos: undefined;
     API: undefined;
     Perfil: undefined;
+    Redes: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
@@ -176,6 +180,8 @@ export default function DashboardScreen({ navigation }: Props) {
                         iconName = focused ? 'code-slash' : 'code-slash-outline';
                     } else if (route.name === 'Perfil') {
                         iconName = focused ? 'person' : 'person-outline';
+                    }else if (route.name === 'Redes') {
+                        iconName = focused ? 'git-network' : 'git-network-outline';
                     }
 
                     return <Ionicons name={iconName} size={size} color={color} />;
@@ -193,6 +199,7 @@ export default function DashboardScreen({ navigation }: Props) {
         >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Dispositivos" component={DispositivosScreen as any} options={{ tabBarLabel: 'Dispositivos' }} />
+            <Tab.Screen name="Redes" component={RedesScreen as any} options={{ tabBarLabel: 'Redes' }} />
             <Tab.Screen name="API" component={ApiScreen} />
             <Tab.Screen name="Perfil" component={PerfilScreen} />
         </Tab.Navigator>

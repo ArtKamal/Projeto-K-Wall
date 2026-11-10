@@ -3,8 +3,8 @@ export interface RedeModel{
     nome: string;
     enderecoCIDR: string;
     gateway?: string;
-    dns?: string;
-    vlan?: string;
+    dns?: string[];
+    vlan?: number;
     descricao?: string;
     ativo: boolean;
 }

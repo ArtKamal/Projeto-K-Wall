@@ -1,204 +1,198 @@
-// import { child, get, push, ref, remove, update } from 'firebase/database';
-// import { RedeModel } from '../models/RedeModel';
-// import { database } from '../services/firebaseConfig';
 
-// // Tipo para mapear os erros de validação de cada campo do formulário
-// export type ErrosRede = Partial<Record<keyof RedeModel, string>>;
+import axios from 'axios';
 
-// export class RedeService {
+import type { RedeModel } from '../models/RedeModel';
+import { API_KEY, BIN_URL, URL } from '../constants/config';
 
-//     static aplicarMascaraData(texto: string): string {
-//         let limpo = texto.replace(/\D/g, '');
-//         if (limpo.length > 8) limpo = limpo.substring(0, 8);
-//         if (limpo.length <= 2) return limpo;
-//         if (limpo.length <= 4) return `${limpo.substring(0, 2)}/${limpo.substring(2)}`;
-//         return `${limpo.substring(0, 2)}/${limpo.substring(2, 4)}/${limpo.substring(4)}`;
-//     }
+// Dados da rede sem o ID, pois ele será gerado pelo serviço.
+type RedeDados = Omit<RedeModel, 'id'>;
 
+// Formato da resposta retornada pelo JSONBin.
+interface JSONBinResponse {
+    record: {
+        redes: RedeModel[];
+    };
+    metadata?: {
+        id?: string;
+        private?: boolean;
+    };
+}
 
-//     static validarCampos(dados: RedeModel): { valido: boolean; erros: ErrosRede } {
-//         const erros: ErrosRede = {};
+// Cabeçalhos utilizados nas requisições.
+const headers = {
+    'X-Master-Key': API_KEY,
+    'Content-Type': 'application/json'
+};
 
-//         if (!dados.nome || !dados.nome.trim()) {
-//             erros.nome = 'Campo obrigatório.';
-//         }
+// Gera um identificador para cada rede cadastrada.
+const gerarId = (): string => {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+};
 
-//         if (!dados.endereco || !dados.endereco.trim()) {
-//             erros.endereco = 'Campo obrigatório.';
-//         }
+// Converte erros do Axios em mensagens mais úteis.
+const tratarErro = (
+    error: unknown,
+    mensagemPadrao: string
+): Error => {
+    if (axios.isAxiosError<{ message?: string }>(error)) {
+        const mensagemAPI = error.response?.data?.message;
 
-//         if (!dados.tipo || !dados.tipo.trim()) {
-//             erros.tipo = 'Campo obrigatório.';
-//         }
+        if (mensagemAPI) {
+            return new Error(mensagemAPI);
+        }
 
-//         if (!dados.nivelCritico || !dados.nivelCritico.trim()) {
-//             erros.nivelCritico = 'Campo obrigatório.';
-//         }
+        if (!error.response) {
+            return new Error(
+                'Não foi possível conectar ao JSONBin. Verifique sua conexão.'
+            );
+        }
+    }
 
-//         return {
-//             valido: Object.keys(erros).length === 0,
-//             erros,
-//         };
-//     }
-//     static async enderecoJaExiste(
-//         tipoEndereco: 'ipv4' | 'hostname',
-//         endereco: string,
-//         idIgnorado?: string | number
-//     ): Promise<boolean> {
-//         const dispositivos = await this.listarTodas();
+    if (error instanceof Error) {
+        return error;
+    }
 
-//         const isValidIPv4 = (value: string): boolean => {
-//             const parts = value.trim().split('.');
+    return new Error(mensagemPadrao);
+};
 
-//             if (parts.length !== 4) {
-//                 return false;
-//             }
+// Busca todas as redes armazenadas no Bin.
+const buscarRedes = async (): Promise<RedeModel[]> => {
+    const response = await axios.get<JSONBinResponse>(URL, {
+        headers: {
+            'X-Master-Key': API_KEY
+        }
+    });
 
-//             return parts.every((part) => {
-//                 if (!/^\d{1,3}$/.test(part)) {
-//                     return false;
-//                 }
+    const redes = response.data?.record?.redes;
 
-//                 const number = Number(part);
+    if (!Array.isArray(redes)) {
+        throw new Error(
+            'Estrutura inválida no JSONBin. Verifique se o Bin contém { "redes": [] }.'
+        );
+    }
 
-//                 return number >= 0 && number <= 255;
-//             });
-//         }
-//         const normalizar = (valor: string, tipo: 'ipv4' | 'hostname') => {
-//             const limpo = valor.trim();
+    return redes;
+};
 
-//             if (tipo === 'ipv4') {
-//                 return limpo
-//                     .split('.')
-//                     .map((parte) => String(Number(parte)))
-//                     .join('.');
-//             }
+// Substitui o conteúdo do Bin pela nova lista de redes.
+const salvarRedes = async (redes: RedeModel[]): Promise<void> => {
+    await axios.put(
+        BIN_URL,
+        { redes },
+        { headers }
+    );
+};
 
-//             return limpo.toLowerCase();
-//         };
+export const RedeService = {
 
-//         const alvo = normalizar(endereco, tipoEndereco);
+    // LISTAR TODAS AS REDES
+    async listarTodas(): Promise<RedeModel[]> {
+        try {
+            return await buscarRedes();
 
-//         return dispositivos.some((dispositivo) => {
-//             // Na edição, ignora o próprio dispositivo.
-//             if (
-//                 idIgnorado != null &&
-//                 String(dispositivo.id) === String(idIgnorado)
-//             ) {
-//                 return false;
-//             }
+        } catch (error) {
+            console.error('Erro ao listar redes:', error);
 
-//             const enderecoSalvo =
-//                 dispositivo.endereco ?? '';
+            throw tratarErro(
+                error,
+                'Falha ao carregar as redes.'
+            );
+        }
+    },
 
-//             if (!enderecoSalvo.trim()) {
-//                 return false;
-//             }
+    // CADASTRAR UMA NOVA REDE
+    async criar(dados: RedeDados): Promise<void> {
+        try {
+            const redesAtuais = await buscarRedes();
 
-//             const tipoSalvo =
-//                 dispositivo.tipoEndereco ??
-//                 (isValidIPv4(enderecoSalvo) ? 'ipv4' : 'hostname');
+            const novaRede: RedeModel = {
+                ...dados,
+                id: gerarId()
+            };
 
-//             return (
-//                 tipoSalvo === tipoEndereco &&
-//                 normalizar(enderecoSalvo, tipoSalvo) === alvo
-//             );
-//         });
-//     }
-//     static async criar(dados: RedeModel): Promise<RedeModel> {
-//         try {
-//             const redesRef = ref(database, 'redes');
+            const novasRedes = [
+                ...redesAtuais,
+                novaRede
+            ];
 
-//             // Gera uma chave/ID única no nó "redes"
-//             const novaRedeRef = push(redesRef);
-//             const novoId = novaRedeRef.key;
+            await salvarRedes(novasRedes);
 
-//             if (!novoId) {
-//                 throw new Error('Não foi possível gerar um ID único no Firebase.');
-//             }
+            console.log('Rede cadastrada:', novaRede);
 
-//             const novaRede: RedeModel = {
-//                 ...dados,
-//                 id: novoId,
-//             };
+        } catch (error) {
+            console.error('Erro ao cadastrar rede:', error);
 
-//             // Guarda os dados na referência criada
-//             await update(novaRedeRef, novaRede);
+            throw tratarErro(
+                error,
+                'Falha ao cadastrar a rede.'
+            );
+        }
+    },
 
-//             return novaRede;
-//         } catch (error) {
-//             console.error('Erro ao criar rede no Firebase:', error);
-//             throw new Error('Falha ao registar a rede no banco de dados.');
-//         }
-//     }
+    // ATUALIZAR UMA REDE EXISTENTE
+    async atualizar(
+        id: string,
+        dados: RedeDados
+    ): Promise<void> {
+        try {
+            const redesAtuais = await buscarRedes();
 
-//     static async listarTodas(): Promise<RedeModel[]> {
-//         try {
-//             const dbRef = ref(database);
-//             const snapshot = await get(child(dbRef, 'redes'));
+            const existe = redesAtuais.some(
+                rede => rede.id === id
+            );
 
-//             if (snapshot.exists()) {
-//                 const data = snapshot.val();
+            if (!existe) {
+                throw new Error('Rede não encontrada.');
+            }
 
-//                 // Transforma o objeto retornado do Firebase num array de RedeModel
-//                 return Object.keys(data).map((key) => ({
-//                     id: key,
-//                     ...data[key],
-//                 }));
-//             }
+            const redesAtualizadas = redesAtuais.map(rede =>
+                rede.id === id
+                    ? { ...dados, id }
+                    : rede
+            );
 
-//             return [];
-//         } catch (error) {
-//             console.error('Erro ao listar redes do Firebase:', error);
-//             throw new Error('Falha ao carregar as redes.');
-//         }
-//     }
+            await salvarRedes(redesAtualizadas);
 
-//     static async obterPorId(id: string): Promise<RedeModel | null> {
-//         try {
-//             const dbRef = ref(database);
-//             const snapshot = await get(child(dbRef, `redes/${id}`));
+            console.log('Rede atualizada:', id);
 
-//             if (snapshot.exists()) {
-//                 return {
-//                     id,
-//                     ...snapshot.val(),
-//                 };
-//             }
+        } catch (error) {
+            console.error('Erro ao atualizar rede:', error);
 
-//             return null;
-//         } catch (error) {
-//             console.error(`Erro ao buscar rede com ID ${id}:`, error);
-//             throw new Error('Falha ao obter os dados da rede.');
-//         }
-//     }
+            throw tratarErro(
+                error,
+                'Falha ao atualizar a rede.'
+            );
+        }
+    },
 
-//     static async atualizar(id: string, dados: RedeModel): Promise<boolean> {
-//         try {
-//             const redeRef = ref(database, `redes/${id}`);
+    // EXCLUIR UMA REDE
+    async eliminar(id: string): Promise<void> {
+        try {
+            const redesAtuais = await buscarRedes();
 
-//             const dadosAtualizados: RedeModel = {
-//                 ...dados,
-//                 id,
-//             };
+            const existe = redesAtuais.some(
+                rede => rede.id === id
+            );
 
-//             await update(redeRef, dadosAtualizados);
-//             return true;
-//         } catch (error) {
-//             console.error(`Erro ao atualizar rede com ID ${id}:`, error);
-//             throw new Error('Falha ao atualizar a rede.');
-//         }
-//     }
+            if (!existe) {
+                throw new Error('Rede não encontrada.');
+            }
 
-//     static async eliminar(id: string): Promise<boolean> {
-//         try {
-//             const redeRef = ref(database, `redes/${id}`);
-//             await remove(redeRef);
-//             return true;
-//         } catch (error) {
-//             console.error(`Erro ao eliminar rede com ID ${id}:`, error);
-//             throw new Error('Falha ao remover a rede.');
-//         }
-//     }
-//     // Exemplo no componente que carrega a lista
-// }
+            const redesAtualizadas = redesAtuais.filter(
+                rede => rede.id !== id
+            );
+
+            await salvarRedes(redesAtualizadas);
+
+            console.log('Rede removida:', id);
+
+        } catch (error) {
+            console.error('Erro ao excluir rede:', error);
+
+            throw tratarErro(
+                error,
+                'Falha ao excluir a rede.'
+            );
+        }
+    }
+};

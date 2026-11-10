@@ -24,6 +24,8 @@ type RootStackParamList = {
     Dashboard: undefined;
     Dispositivos: undefined;
     Dispositivo: { dispositivoParaEditar?: DispositiveModel }; // Atualizado para aceitar parâmetro de edição
+    Rede: undefined;
+    Redes: undefined;
 };
 
 type Props = NativeStackScreenProps<
