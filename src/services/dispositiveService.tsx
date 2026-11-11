@@ -1,204 +1,186 @@
-import { child, get, push, ref, remove, update } from 'firebase/database';
-import { DispositiveModel } from '../models/DispositiveModel';
-import { database } from '../services/firebaseConfig';
 
-// Tipo para mapear os erros de validação de cada campo do formulário
-export type ErrosDispositive = Partial<Record<keyof DispositiveModel, string>>;
+import axios from 'axios';
 
-export class DispositiveService {
+import type { DispositiveModel } from '../models/DispositiveModel';
 
-    static aplicarMascaraData(texto: string): string {
-        let limpo = texto.replace(/\D/g, '');
-        if (limpo.length > 8) limpo = limpo.substring(0, 8);
-        if (limpo.length <= 2) return limpo;
-        if (limpo.length <= 4) return `${limpo.substring(0, 2)}/${limpo.substring(2)}`;
-        return `${limpo.substring(0, 2)}/${limpo.substring(2, 4)}/${limpo.substring(4)}`;
+import {
+    API_KEY,
+    DISPOSITIVOS_BIN_URL,
+    DISPOSITIVOS_URL
+} from '../constants/config';
+
+// Todos os campos do dispositivo, exceto o ID.
+// O ID será gerado pelo serviço.
+type DispositivoDados = Omit<DispositiveModel, 'id'>;
+
+// Formato esperado da resposta do JSONBin.
+interface JSONBinResponse {
+    record: {
+        dispositivos: DispositiveModel[];
+    };
+}
+
+// Cabeçalhos das requisições.
+const headers = {
+    'X-Master-Key': API_KEY,
+    'Content-Type': 'application/json'
+};
+
+// Gera um ID para cada dispositivo.
+const gerarId = (): string => {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+};
+
+// Recupera todos os dispositivos do JSONBin.
+const buscarDispositivos = async (): Promise<DispositiveModel[]> => {
+
+    const response = await axios.get<JSONBinResponse>(
+        DISPOSITIVOS_URL,
+        {
+            headers: {
+                'X-Master-Key': API_KEY
+            }
+        }
+    );
+
+    const dispositivos = response.data?.record?.dispositivos;
+
+    if (!Array.isArray(dispositivos)) {
+        throw new Error('Estrutura inválida no Bin de dispositivos.');
     }
 
+    return dispositivos;
+};
 
-    static validarCampos(dados: DispositiveModel): { valido: boolean; erros: ErrosDispositive } {
-        const erros: ErrosDispositive = {};
+// Atualiza o documento inteiro no JSONBin.
+const salvarDispositivos = async (
+    dispositivos: DispositiveModel[]
+): Promise<void> => {
 
-        if (!dados.nome || !dados.nome.trim()) {
-            erros.nome = 'Campo obrigatório.';
-        }
+    await axios.put(
+        DISPOSITIVOS_BIN_URL,
+        { dispositivos },
+        { headers }
+    );
+};
 
-        if (!dados.endereco || !dados.endereco.trim()) {
-            erros.endereco = 'Campo obrigatório.';
-        }
+export const DispositiveService = {
 
-        if (!dados.tipo || !dados.tipo.trim()) {
-            erros.tipo = 'Campo obrigatório.';
-        }
-
-        if (!dados.nivelCritico || !dados.nivelCritico.trim()) {
-            erros.nivelCritico = 'Campo obrigatório.';
-        }
-
-        return {
-            valido: Object.keys(erros).length === 0,
-            erros,
-        };
-    }
-    static async enderecoJaExiste(
-        tipoEndereco: 'ipv4' | 'hostname',
-        endereco: string,
-        idIgnorado?: string | number
-    ): Promise<boolean> {
-        const dispositivos = await this.listarTodas();
-
-        const isValidIPv4 = (value: string): boolean => {
-            const parts = value.trim().split('.');
-
-            if (parts.length !== 4) {
-                return false;
-            }
-
-            return parts.every((part) => {
-                if (!/^\d{1,3}$/.test(part)) {
-                    return false;
-                }
-
-                const number = Number(part);
-
-                return number >= 0 && number <= 255;
-            });
-        }
-        const normalizar = (valor: string, tipo: 'ipv4' | 'hostname') => {
-            const limpo = valor.trim();
-
-            if (tipo === 'ipv4') {
-                return limpo
-                    .split('.')
-                    .map((parte) => String(Number(parte)))
-                    .join('.');
-            }
-
-            return limpo.toLowerCase();
-        };
-
-        const alvo = normalizar(endereco, tipoEndereco);
-
-        return dispositivos.some((dispositivo) => {
-            // Na edição, ignora o próprio dispositivo.
-            if (
-                idIgnorado != null &&
-                String(dispositivo.id) === String(idIgnorado)
-            ) {
-                return false;
-            }
-
-            const enderecoSalvo =
-                dispositivo.endereco ?? '';
-
-            if (!enderecoSalvo.trim()) {
-                return false;
-            }
-
-            const tipoSalvo =
-                dispositivo.tipoEndereco ??
-                (isValidIPv4(enderecoSalvo) ? 'ipv4' : 'hostname');
-
-            return (
-                tipoSalvo === tipoEndereco &&
-                normalizar(enderecoSalvo, tipoSalvo) === alvo
-            );
-        });
-    }
-    static async criar(dados: DispositiveModel): Promise<DispositiveModel> {
+    // LISTAR
+    async listarTodas(): Promise<DispositiveModel[]> {
         try {
-            const dispositivosRef = ref(database, 'dispositivos');
+            return await buscarDispositivos();
 
-            // Gera uma chave/ID única no nó "dispositivos"
-            const novoDispositivoRef = push(dispositivosRef);
-            const novoId = novoDispositivoRef.key;
+        } catch (error) {
+            console.error('Erro ao listar dispositivos:', error);
 
-            if (!novoId) {
-                throw new Error('Não foi possível gerar um ID único no Firebase.');
-            }
+            throw tratarErro(error, 'Falha ao carregar os dispositivos.');
+        }
+    },
+
+    // CADASTRAR
+    async criar(dados: DispositivoDados): Promise<void> {
+        try {
+            const dispositivos = await buscarDispositivos();
 
             const novoDispositivo: DispositiveModel = {
                 ...dados,
-                id: novoId,
+                id: gerarId()
             };
 
-            // Guarda os dados na referência criada
-            await update(novoDispositivoRef, novoDispositivo);
+            const atualizados = [
+                ...dispositivos,
+                novoDispositivo
+            ];
 
-            return novoDispositivo;
+            await salvarDispositivos(atualizados);
+
+            console.log('Dispositivo cadastrado:', novoDispositivo);
+
         } catch (error) {
-            console.error('Erro ao criar dispositivo no Firebase:', error);
-            throw new Error('Falha ao registar o dispositivo no banco de dados.');
+            console.error('Erro ao cadastrar dispositivo:', error);
+
+            throw tratarErro(error, 'Falha ao cadastrar dispositivo.');
         }
-    }
+    },
 
-    static async listarTodas(): Promise<DispositiveModel[]> {
+    // ATUALIZAR
+    async atualizar(
+        id: string | number,
+        dados: DispositivoDados
+    ): Promise<void> {
         try {
-            const dbRef = ref(database);
-            const snapshot = await get(child(dbRef, 'dispositivos'));
+            const dispositivos = await buscarDispositivos();
 
-            if (snapshot.exists()) {
-                const data = snapshot.val();
+            const existe = dispositivos.some(
+                dispositivo => String(dispositivo.id) === String(id)
+            );
 
-                // Transforma o objeto retornado do Firebase num array de DispositiveModel
-                return Object.keys(data).map((key) => ({
-                    id: key,
-                    ...data[key],
-                }));
+            if (!existe) {
+                throw new Error('Dispositivo não encontrado.');
             }
 
-            return [];
+            const atualizados = dispositivos.map(dispositivo =>
+                String(dispositivo.id) === String(id)
+                    ? { ...dados, id: dispositivo.id }
+                    : dispositivo
+            );
+
+            await salvarDispositivos(atualizados);
+
+            console.log('Dispositivo atualizado:', id);
+
         } catch (error) {
-            console.error('Erro ao listar dispositivos do Firebase:', error);
-            throw new Error('Falha ao carregar os dispositivos.');
+            console.error('Erro ao atualizar dispositivo:', error);
+
+            throw tratarErro(error, 'Falha ao atualizar dispositivo.');
         }
-    }
+    },
 
-    static async obterPorId(id: string): Promise<DispositiveModel | null> {
+    // EXCLUIR
+    async eliminar(id: string | number): Promise<void> {
         try {
-            const dbRef = ref(database);
-            const snapshot = await get(child(dbRef, `dispositivos/${id}`));
+            const dispositivos = await buscarDispositivos();
 
-            if (snapshot.exists()) {
-                return {
-                    id,
-                    ...snapshot.val(),
-                };
+            const atualizados = dispositivos.filter(
+                dispositivo => String(dispositivo.id) !== String(id)
+            );
+
+            if (atualizados.length === dispositivos.length) {
+                throw new Error('Dispositivo não encontrado.');
             }
 
-            return null;
+            await salvarDispositivos(atualizados);
+
+            console.log('Dispositivo removido:', id);
+
         } catch (error) {
-            console.error(`Erro ao buscar dispositivo com ID ${id}:`, error);
-            throw new Error('Falha ao obter os dados do dispositivo.');
+            console.error('Erro ao excluir dispositivo:', error);
+
+            throw tratarErro(error, 'Falha ao excluir dispositivo.');
+        }
+    }
+};
+
+// Tratamento de erros da API.
+function tratarErro(error: unknown, mensagem: string): Error {
+
+    if (axios.isAxiosError(error)) {
+        const resposta = error.response?.data as
+            { message?: string } | undefined;
+
+        if (resposta?.message) {
+            return new Error(resposta.message);
+        }
+
+        if (!error.response) {
+            return new Error('Não foi possível conectar ao JSONBin.');
         }
     }
 
-    static async atualizar(id: string, dados: DispositiveModel): Promise<boolean> {
-        try {
-            const dispositivoRef = ref(database, `dispositivos/${id}`);
-
-            const dadosAtualizados: DispositiveModel = {
-                ...dados,
-                id,
-            };
-
-            await update(dispositivoRef, dadosAtualizados);
-            return true;
-        } catch (error) {
-            console.error(`Erro ao atualizar dispositivo com ID ${id}:`, error);
-            throw new Error('Falha ao atualizar o dispositivo.');
-        }
+    if (error instanceof Error) {
+        return error;
     }
 
-    static async eliminar(id: string): Promise<boolean> {
-        try {
-            const dispositivoRef = ref(database, `dispositivos/${id}`);
-            await remove(dispositivoRef);
-            return true;
-        } catch (error) {
-            console.error(`Erro ao eliminar dispositivo com ID ${id}:`, error);
-            throw new Error('Falha ao remover o dispositivo.');
-        }
-    }
-    // Exemplo no componente que carrega a lista
+    return new Error(mensagem);
 }
