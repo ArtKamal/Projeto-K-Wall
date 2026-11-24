@@ -13,11 +13,13 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    Switch
+    Switch,
+    Image
 } from 'react-native';
 
 import type { RedeModel } from '../models/RedeModel';
 import { RedeService } from '../services/redeService';
+import { NotificationService } from '../services/notificationService';
 
 type RootStackParamList = {
     Splash: undefined;
@@ -43,6 +45,7 @@ export default function RedeScreen({ route, navigation }: Props) {
     const [vlan, setVlan] = useState('');
     const [descricao, setDescricao] = useState('');
     const [ativo, setAtivo] = useState<boolean>(true);
+    const [imagem, setImagem] = useState('');
 
     const [nomeError, setNomeError] = useState('');
     const [cidrError, setCidrError] = useState('');
@@ -62,6 +65,7 @@ export default function RedeScreen({ route, navigation }: Props) {
         setVlan(redeParaEditar.vlan !== undefined ? String(redeParaEditar.vlan) : '');
         setDescricao(redeParaEditar.descricao ?? '');
         setAtivo(redeParaEditar.ativo ?? true);
+        setImagem(redeParaEditar.imagem ?? '');
     }, [redeParaEditar]);
 
     const isValidIPv4 = (value: string): boolean => {
@@ -149,7 +153,8 @@ export default function RedeScreen({ route, navigation }: Props) {
             dns: dns.split(',').map((item) => item.trim()).filter(Boolean),
             vlan: vlan.trim() ? Number(vlan) : undefined,
             descricao: descricao.trim() || undefined,
-            ativo
+            ativo,
+            imagem: imagem.trim() || undefined
         };
 
         try {
@@ -162,6 +167,7 @@ export default function RedeScreen({ route, navigation }: Props) {
                 }
                 await RedeService.atualizar(String(id), dadosRede);
                 setMensagemSucesso('Rede atualizada com sucesso!');
+                await NotificationService.enviar('Atualizado!', 'Rede ' + dadosRede.nome + ' atualizada com sucesso no K-Wall.');
             } else {
                 await RedeService.criar(dadosRede);
                 setMensagemSucesso('Rede cadastrada com sucesso!');
@@ -172,6 +178,8 @@ export default function RedeScreen({ route, navigation }: Props) {
                 setVlan('');
                 setDescricao('');
                 setAtivo(true);
+                setImagem('');
+                await NotificationService.enviar('Sucesso!', 'Rede ' + dadosRede.nome + ' cadastrada com sucesso no K-Wall.');
             }
         } catch (error) {
             console.error('Erro ao salvar rede:', error);
@@ -343,6 +351,26 @@ export default function RedeScreen({ route, navigation }: Props) {
                         </View>
                     </View>
 
+                    <Text style={styles.label}>URL da imagem</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="https://exemplo.com/imagem.jpg"
+                        placeholderTextColor="#9CA3AF"
+                        value={imagem}
+                        onChangeText={setImagem}
+                        autoCapitalize="none"
+                        keyboardType="url"
+                    />
+
+                    {imagem.trim() !== '' && (
+                        <Image
+                            source={{ uri: imagem.trim() }}
+                            style={styles.previewImage}
+                            resizeMode="cover"
+                        />
+                    )}
+
                     <View style={styles.inputGroup}>
                         <View style={styles.statusRow}>
                             <View style={styles.statusTextContainer}>
@@ -422,6 +450,13 @@ const styles = StyleSheet.create({
     },
     placeholder: {
         width: 40
+    },
+    previewImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        marginTop: 10,
+        marginBottom: 20
     },
     content: {
         paddingHorizontal: 24,

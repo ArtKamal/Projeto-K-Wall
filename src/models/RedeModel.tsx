@@ -7,4 +7,5 @@ export interface RedeModel{
     vlan?: number;
     descricao?: string;
     ativo: boolean;
+    imagem?: string;
 }

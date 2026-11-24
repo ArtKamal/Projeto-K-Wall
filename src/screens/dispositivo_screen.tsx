@@ -15,6 +15,7 @@ import {
     Switch
 } from 'react-native';
 import { DispositiveService } from '../services/dispositiveService';
+import { NotificationService } from '../services/notificationService';
 
 type TipoEndereco = 'ipv4' | 'hostname';
 
@@ -266,6 +267,7 @@ export default function DispositivoScreen({ route, navigation }: Props) {
                 setEndereco('');
                 setTipo('');
                 setNivelCritico('');
+                await NotificationService.enviar('Sucesso!', 'Dispositivo cadastrado com sucesso no K-Wall.');
             }
         }
     };

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import DispositivosScreen from './dispositivos_screen';
 import RedesScreen from './redes_screen';
+import { NotificationService } from '../services/notificationService';
 
 // Tipagem das rotas Stack e Tab
 type RootStackParamList = {
@@ -64,7 +65,9 @@ function HomeScreen({ navigation }: any) {
                     <TouchableOpacity
                         style={styles.notificationButton}
                         activeOpacity={0.7}
-                        onPress={() => console.log('Notificações')}
+                        onPress={async () => {
+                            await NotificationService.enviar('Notificação', 'Esta é uma notificação de teste.');
+                        }}
                     >
                         <Ionicons name="notifications-outline" size={22} color="#E5E7EB" />
                         <View style={styles.notificationBadge} />

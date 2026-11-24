@@ -3,6 +3,7 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Image,
     Platform,
     StatusBar,
     StyleSheet,
@@ -101,7 +102,16 @@ export default function RedesScreen({ navigation }: Props) {
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
                     <View style={styles.networkIcon}>
-                        <Ionicons name="git-network-outline" size={24} color="#47d406" />
+                        {item.imagem ? (
+                            <Image
+                                source={{ uri: item.imagem }}
+                                style={styles.imagemRede}
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <Ionicons name="git-network-outline" size={24} color="#47d406" />
+                        )}
+                        
                     </View>
 
                     <View style={styles.networkHeaderInfo}>
@@ -297,6 +307,11 @@ const styles = StyleSheet.create({
         fontSize: 12,
         textAlign: 'center',
         marginTop: 2
+    },
+    imagemRede: {
+        width: 45,
+        height: 45,
+        borderRadius: 10
     },
     addButton: {
         width: 40,
