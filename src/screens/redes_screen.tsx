@@ -17,6 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RedeModel } from '../models/RedeModel';
 import { RedeService } from '../services/redeService';
+import { NotificationService } from '../services/notificationService';
 
 type RootStackParamList = {
     Splash: undefined;
@@ -60,6 +61,7 @@ export default function RedesScreen({ navigation }: Props) {
         try {
             await RedeService.eliminar(id);
             await carregarRedes();
+            await NotificationService.enviar('Rede removida com sucesso', 'A rede foi excluída do sistema.');
         } catch (error) {
             console.error('Erro ao excluir rede:', error);
             if (Platform.OS === 'web') {
